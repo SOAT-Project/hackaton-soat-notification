@@ -1,0 +1,24 @@
+{
+	"name": "hackaton-soat-notification",
+	"version": "1.0.0",
+	"description": "AWS Lambda function to send email using Amazon SES",
+	"main": "dist/lambda.js",
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/test.js",
+		"test": "echo \"No tests yet\" && exit 0",
+		"deploy": "echo \"Add your deployment script here\""
+	},
+	"author": "",
+	"license": "MIT",
+	"dependencies": {
+		"@aws-sdk/client-cognito-identity-provider": "^3.991.0",
+		"@aws-sdk/client-ses": "^3.500.0",
+		"handlebars": "^4.7.8"
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"eslint": "^8.0.0",
+		"typescript": "^5.0.0"
+	}
+}

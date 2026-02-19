@@ -1,0 +1,88 @@
+name: "Deploy"
+
+on:
+  push:
+    branches:
+      - develop
+      - release
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  set_environment:
+    runs-on: ubuntu-latest
+    outputs:
+      mapped_environment: ${{ steps.branch_map.outputs.environment }}
+
+    steps:
+      - id: branch_map
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          ENVIRONMENT=""
+
+          case "$BRANCH_NAME" in
+            "develop")
+              ENVIRONMENT="dev"
+              ;;
+            "release")
+              ENVIRONMENT="hom"
+              ;;
+            "main")
+              ENVIRONMENT="prod"
+              ;;
+            *)
+              echo "Branch $BRANCH_NAME não mapeada para um ambiente de deploy. Abortando."
+              exit 1
+              ;;
+          esac
+
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "Ambiente mapeado: $ENVIRONMENT"
+
+  deploy_lambda:
+    needs: set_environment
+    runs-on: ubuntu-latest
+    environment: ${{ needs.set_environment.outputs.mapped_environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (caso use TypeScript)
+        run: npm run build
+
+      - name: Zip Lambda code
+        run: |
+          mkdir -p lambda
+          zip -r lambda/notify.zip . -x "node_modules/*" -x ".git/*" -x "dist/*" -x "lambda/*"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update Lambda code
+        run: |
+          LAMBDA_NAME="hackaton-soat-notify-${{ needs.set_environment.outputs.mapped_environment }}"
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_NAME" \
+            --zip-file fileb://lambda/notify.zip
+
+      - name: Update Lambda environment variables
+        run: |
+          LAMBDA_NAME="hackaton-soat-notify-${{ needs.set_environment.outputs.mapped_environment }}"
+          aws lambda update-function-configuration \
+            --function-name "$LAMBDA_NAME" \
+            --environment "Variables={ENVIRONMENT=${{ needs.set_environment.outputs.mapped_environment }},AWS_REGION=${{ secrets.AWS_REGION }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }}}"
