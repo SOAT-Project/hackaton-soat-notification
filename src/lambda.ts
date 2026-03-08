@@ -10,9 +10,15 @@ const cognito = new CognitoIdentityProviderClient({
 	region: process.env.AWS_REGION || "sa-east-1",
 });
 
+enum VideoStatus {
+	PENDING = "PENDING",
+	PROCESSED = "PROCESSED",
+	FAILURE = "FAILURE",
+}
+
 interface NotifySQSEventBody {
 	user_id: string;
-	status: string;
+	status: VideoStatus;
 	error_message: string;
 	video_name: string;
 	video_id: string;
@@ -65,10 +71,20 @@ export const handler = async (event: SQSEvent) => {
 		}
 
 		let emailBody = "";
+		let emailSubject = "";
 		try {
-			emailBody = await renderTemplate("error-notification", {
-				...notifyData,
-			});
+			if (notifyData.status === VideoStatus.PROCESSED) {
+				emailSubject = `Vídeo processado com sucesso: ${notifyData.video_name}`;
+				emailBody = await renderTemplate("success-notification", {
+					videoName: notifyData.video_name,
+					errorMessage: notifyData.error_message,
+				});
+			} else if (notifyData.status === VideoStatus.FAILURE) {
+				emailSubject = `Erro no processamento do vídeo: ${notifyData.video_name}`;
+				emailBody = await renderTemplate("error-notification", {
+					videoName: notifyData.video_name,
+				});
+			}
 		} catch (err) {
 			console.error("Erro ao renderizar template", err);
 			continue;
@@ -80,10 +96,11 @@ export const handler = async (event: SQSEvent) => {
 			},
 			Message: {
 				Body: {
-					Text: { Data: emailBody },
+					Text: { Data: emailBody, Charset: "UTF-8" },
 				},
 				Subject: {
-					Data: `Erro no processamento do vídeo: ${notifyData.video_name}`,
+					Data: emailSubject,
+					Charset: "UTF-8",
 				},
 			},
 			Source: process.env.SES_FROM_EMAIL || "",
