@@ -95,7 +95,7 @@ jobs:
             
             aws lambda update-function-configuration \
               --function-name "$LAMBDA_NAME" \
-              --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }}}"
+              --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}}"
           else
             echo "Função não encontrada. Criando nova..."
             aws lambda create-function \
@@ -104,7 +104,7 @@ jobs:
               --role "$ROLE_ARN" \
               --handler "index.handler" \
               --code S3Bucket="$BUCKET",S3Key="notification.zip" \
-              --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }}}"
+              --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}}"
           fi
 
       - name: Update Lambda environment variables
