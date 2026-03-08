@@ -41,10 +41,11 @@ await handler({
 
 ## Deploy
 
-Implemente a função Lambda na AWS e configure as variáveis de ambiente `AWS_REGION` e `SES_FROM_EMAIL`.
+Implemente a função Lambda na AWS e configure as variáveis de ambiente `MY_APP_REGION`, `SES_FROM_EMAIL` e `COGNITO_USER_POOL_ID` no ambiente da Lambda.
 
 ## Observações
 
 - O e-mail de origem (`SES_FROM_EMAIL`) deve estar verificado no SES.
+- O pool de usuários do Cognito deve estar configurado para permitir a leitura dos dados do usuário.
 - Para produção, proteja suas variáveis de ambiente.
 - Se não informar `templateName`, será enviado o campo `body` como texto simples.

@@ -86,13 +86,16 @@ jobs:
           BUCKET="hackaton-soat-lambda-notification-${ENV}"
           ROLE_ARN="${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}"
 
-          # Verifica se a função existe
           if aws lambda get-function --function-name "$LAMBDA_NAME" > /dev/null 2>&1; then
-            echo "Função existe. Atualizando código..."
+            echo "Função existe. Atualizando código e config..."
             aws lambda update-function-code \
               --function-name "$LAMBDA_NAME" \
               --s3-bucket "$BUCKET" \
               --s3-key "notification.zip"
+            
+            aws lambda update-function-configuration \
+              --function-name "$LAMBDA_NAME" \
+              --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }}}"
           else
             echo "Função não encontrada. Criando nova..."
             aws lambda create-function \
@@ -101,7 +104,7 @@ jobs:
               --role "$ROLE_ARN" \
               --handler "index.handler" \
               --code S3Bucket="$BUCKET",S3Key="notification.zip" \
-              --environment "Variables={ENVIRONMENT=$ENV,AWS_REGION=${{ secrets.AWS_REGION }}}"
+              --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }}}"
           fi
 
       - name: Update Lambda environment variables
