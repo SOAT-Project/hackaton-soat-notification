@@ -64,6 +64,8 @@ jobs:
 
       - name: Zip Lambda code
         run: |
+          mkdir -p lambda
+
           npm prune --production 
 
           cd dist
