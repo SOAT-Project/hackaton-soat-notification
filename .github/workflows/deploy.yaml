@@ -103,7 +103,7 @@ jobs:
         run: |
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
           LAMBDA_NAME="hackaton-soat-notification-${ENV}"
-          SQS_QUEUE_NAME="hackaton-${ENV}-hackaton-soat-notify"
+          SQS_QUEUE_NAME="hackaton-soat-terraform-hackaton-soat-notify"
           SQS_ARN=$(aws sqs get-queue-attributes \
             --queue-url $(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --output text) \
             --attribute-name QueueArn --query 'Attributes.QueueArn' --output text)
