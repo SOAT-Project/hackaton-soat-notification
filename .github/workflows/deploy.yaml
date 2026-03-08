@@ -84,7 +84,7 @@ jobs:
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
           LAMBDA_NAME="hackaton-soat-notification-${ENV}"
           BUCKET="hackaton-soat-lambda-notification-${ENV}"
-          ROLE_ARN="${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}"
+          ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE_ARN }}"
 
           if aws lambda get-function --function-name "$LAMBDA_NAME" > /dev/null 2>&1; then
             echo "Função existe. Atualizando código e config..."
