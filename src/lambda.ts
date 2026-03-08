@@ -96,6 +96,10 @@ export const handler = async (event: SQSEvent) => {
 			},
 			Message: {
 				Body: {
+					Html: {
+						Data: emailBody,
+						Charset: "UTF-8",
+					},
 					Text: { Data: emailBody, Charset: "UTF-8" },
 				},
 				Subject: {
