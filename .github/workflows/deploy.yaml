@@ -59,8 +59,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build (caso use TypeScript)
-        run: npm run build || echo "No build step"
+      - name: Build and Prepare
+        run: |
+          npm run build
+          cp -r templates dist/
 
       - name: Zip Lambda code
         run: |
@@ -72,7 +74,7 @@ jobs:
           zip -r ../lambda/notification.zip .
 
           cd ..
-          zip -rg lambda/notification.zip node_modules
+          zip -rg lambda/notification.zip templates node_modules
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -113,7 +115,7 @@ jobs:
               --function-name "$LAMBDA_NAME" \
               --runtime nodejs18.x \
               --role "$ROLE_ARN" \
-              --handler "index.handler" \
+              --handler "lambda.handler" \
               --code S3Bucket="$BUCKET",S3Key="notification.zip" \
               --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}}"
           fi
