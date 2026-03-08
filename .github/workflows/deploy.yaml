@@ -79,15 +79,30 @@ jobs:
           BUCKET="hackaton-soat-lambda-notification-${ENV}"
           aws s3 cp lambda/notification.zip s3://$BUCKET/notification.zip
 
-      - name: Update Lambda code from S3
+      - name: Deploy or Update Lambda
         run: |
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
           LAMBDA_NAME="hackaton-soat-notification-${ENV}"
           BUCKET="hackaton-soat-lambda-notification-${ENV}"
-          aws lambda update-function-code \
-            --function-name "$LAMBDA_NAME" \
-            --s3-bucket "$BUCKET" \
-            --s3-key "notification.zip"
+          ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE_ARN }}" # Você precisará dessa secret
+
+          # Verifica se a função existe
+          if aws lambda get-function --function-name "$LAMBDA_NAME" > /dev/null 2>&1; then
+            echo "Função existe. Atualizando código..."
+            aws lambda update-function-code \
+              --function-name "$LAMBDA_NAME" \
+              --s3-bucket "$BUCKET" \
+              --s3-key "notification.zip"
+          else
+            echo "Função não encontrada. Criando nova..."
+            aws lambda create-function \
+              --function-name "$LAMBDA_NAME" \
+              --runtime nodejs18.x \
+              --role "$ROLE_ARN" \
+              --handler "index.handler" \
+              --code S3Bucket="$BUCKET",S3Key="notification.zip" \
+              --environment "Variables={ENVIRONMENT=$ENV,AWS_REGION=${{ secrets.AWS_REGION }}}"
+          fi
 
       - name: Update Lambda environment variables
         run: |
@@ -96,8 +111,6 @@ jobs:
           aws lambda update-function-configuration \
             --function-name "$LAMBDA_NAME" \
             --environment "Variables={ENVIRONMENT=$ENV,AWS_REGION=${{ secrets.AWS_REGION }}}"
-
-            - name: Create SQS trigger for Lambda
 
       - name: Create SQS trigger for Lambda
         run: |
