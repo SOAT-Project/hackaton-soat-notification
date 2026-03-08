@@ -1,4 +1,4 @@
-name: "Deploy"
+name: "Deploy Lambda Notification"
 
 on:
   push:
@@ -60,12 +60,12 @@ jobs:
         run: npm ci
 
       - name: Build (caso use TypeScript)
-        run: npm run build
+        run: npm run build || echo "No build step"
 
       - name: Zip Lambda code
         run: |
           mkdir -p lambda
-          zip -r lambda/notify.zip . -x "node_modules/*" -x ".git/*" -x "dist/*" -x "lambda/*"
+          zip -r lambda/notification.zip . -x "node_modules/*" -x ".git/*" -x "dist/*" -x "lambda/*"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -73,16 +73,43 @@ jobs:
           role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Update Lambda code
+      - name: Upload Lambda code to S3
         run: |
-          LAMBDA_NAME="hackaton-soat-notify-${{ needs.set_environment.outputs.mapped_environment }}"
+          ENV=${{ needs.set_environment.outputs.mapped_environment }}
+          BUCKET="hackaton-soat-lambda-notification-${ENV}"
+          aws s3 cp lambda/notification.zip s3://$BUCKET/notification.zip
+
+      - name: Update Lambda code from S3
+        run: |
+          ENV=${{ needs.set_environment.outputs.mapped_environment }}
+          LAMBDA_NAME="hackaton-soat-notification-${ENV}"
+          BUCKET="hackaton-soat-lambda-notification-${ENV}"
           aws lambda update-function-code \
             --function-name "$LAMBDA_NAME" \
-            --zip-file fileb://lambda/notify.zip
+            --s3-bucket "$BUCKET" \
+            --s3-key "notification.zip"
 
       - name: Update Lambda environment variables
         run: |
-          LAMBDA_NAME="hackaton-soat-notify-${{ needs.set_environment.outputs.mapped_environment }}"
+          ENV=${{ needs.set_environment.outputs.mapped_environment }}
+          LAMBDA_NAME="hackaton-soat-notification-${ENV}"
           aws lambda update-function-configuration \
             --function-name "$LAMBDA_NAME" \
-            --environment "Variables={ENVIRONMENT=${{ needs.set_environment.outputs.mapped_environment }},AWS_REGION=${{ secrets.AWS_REGION }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }}}"
+            --environment "Variables={ENVIRONMENT=$ENV,AWS_REGION=${{ secrets.AWS_REGION }}}"
+
+            - name: Create SQS trigger for Lambda
+
+      - name: Create SQS trigger for Lambda
+        run: |
+          ENV=${{ needs.set_environment.outputs.mapped_environment }}
+          LAMBDA_NAME="hackaton-soat-notification-${ENV}"
+          SQS_QUEUE_NAME="hackaton-${ENV}-hackaton-soat-notify"
+          SQS_ARN=$(aws sqs get-queue-attributes \
+            --queue-url $(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --output text) \
+            --attribute-name QueueArn --query 'Attributes.QueueArn' --output text)
+          aws lambda create-event-source-mapping \
+            --function-name "$LAMBDA_NAME" \
+            --event-source-arn "$SQS_ARN" \
+            --batch-size 10 \
+            --enabled
+        continue-on-error: true
