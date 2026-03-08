@@ -64,8 +64,13 @@ jobs:
 
       - name: Zip Lambda code
         run: |
-          mkdir -p lambda
-          zip -r lambda/notification.zip . -x "node_modules/*" -x ".git/*" -x "dist/*" -x "lambda/*"
+          npm prune --production 
+
+          cd dist
+          zip -r ../lambda/notification.zip .
+
+          cd ..
+          zip -rg lambda/notification.zip node_modules
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
