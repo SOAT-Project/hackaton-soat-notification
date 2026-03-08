@@ -62,7 +62,7 @@ jobs:
       - name: Build and Prepare
         run: |
           npm run build
-          cp -r templates dist/
+          cp -r src/templates dist/
 
       - name: Zip Lambda code
         run: |
