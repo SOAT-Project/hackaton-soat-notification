@@ -5,9 +5,9 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { renderTemplate } from "./templateService";
 
-const ses = new SESClient({ region: process.env.AWS_REGION || "sa-east-1" });
+const ses = new SESClient({ region: process.env.MY_APP_REGION || "sa-east-1" });
 const cognito = new CognitoIdentityProviderClient({
-	region: process.env.AWS_REGION || "sa-east-1",
+	region: process.env.MY_APP_REGION || "sa-east-1",
 });
 
 enum VideoStatus {
