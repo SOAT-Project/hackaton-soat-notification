@@ -107,14 +107,6 @@ jobs:
               --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}}"
           fi
 
-      - name: Update Lambda environment variables
-        run: |
-          ENV=${{ needs.set_environment.outputs.mapped_environment }}
-          LAMBDA_NAME="hackaton-soat-notification-${ENV}"
-          aws lambda update-function-configuration \
-            --function-name "$LAMBDA_NAME" \
-            --environment "Variables={ENVIRONMENT=$ENV,AWS_REGION=${{ secrets.AWS_REGION }}}"
-
       - name: Create SQS trigger for Lambda
         run: |
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
