@@ -94,12 +94,16 @@ jobs:
           ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE_ARN }}"
 
           if aws lambda get-function --function-name "$LAMBDA_NAME" > /dev/null 2>&1; then
-            echo "Função existe. Atualizando código e config..."
+            echo "Função existe. Atualizando código..."
             aws lambda update-function-code \
               --function-name "$LAMBDA_NAME" \
               --s3-bucket "$BUCKET" \
               --s3-key "notification.zip"
             
+            echo "Aguardando atualização de código concluir..."
+            aws lambda wait function-updated --function-name "$LAMBDA_NAME"
+
+            echo "Atualizando configurações..."
             aws lambda update-function-configuration \
               --function-name "$LAMBDA_NAME" \
               --environment "Variables={ENVIRONMENT=$ENV,MY_APP_REGION=${{ secrets.AWS_REGION }},SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }},COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID }}}"
