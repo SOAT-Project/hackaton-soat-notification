@@ -85,14 +85,14 @@ jobs:
       - name: Upload Lambda code to S3
         run: |
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
-          BUCKET="hackaton-soat-lambda-notification-${ENV}"
+          BUCKET=${{ secrets.AWS_LAMBDA_BUCKET_PREFIX }}-${ENV}
           aws s3 cp lambda/notification.zip s3://$BUCKET/notification.zip
 
       - name: Deploy or Update Lambda
         run: |
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
-          LAMBDA_NAME="hackaton-soat-notification-${ENV}"
-          BUCKET="hackaton-soat-lambda-notification-${ENV}"
+          LAMBDA_NAME=${{ secrets.AWS_LAMBDA_NAME }}-$ENV
+          BUCKET=${{ secrets.AWS_LAMBDA_BUCKET_PREFIX }}-${ENV}
           ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE_ARN }}"
 
           if aws lambda get-function --function-name "$LAMBDA_NAME" > /dev/null 2>&1; then
@@ -123,8 +123,8 @@ jobs:
       - name: Create SQS trigger for Lambda
         run: |
           ENV=${{ needs.set_environment.outputs.mapped_environment }}
-          LAMBDA_NAME="hackaton-soat-notification-${ENV}"
-          SQS_QUEUE_NAME="hackaton-soat-terraform-hackaton-soat-notify"
+          LAMBDA_NAME=${{ secrets.AWS_LAMBDA_NAME }}-${ENV}
+          SQS_QUEUE_NAME=${{ secrets.AWS_SQS_QUEUE_NAME }}
           SQS_ARN=$(aws sqs get-queue-attributes \
             --queue-url $(aws sqs get-queue-url --queue-name $SQS_QUEUE_NAME --output text) \
             --attribute-name QueueArn --query 'Attributes.QueueArn' --output text)

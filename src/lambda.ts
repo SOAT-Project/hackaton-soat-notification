@@ -35,6 +35,7 @@ interface SQSEvent {
 export const handler = async (event: SQSEvent) => {
 	for (const record of event.Records) {
 		let notifyData: NotifySQSEventBody;
+
 		try {
 			notifyData = JSON.parse(record.body);
 		} catch (err) {
@@ -45,8 +46,10 @@ export const handler = async (event: SQSEvent) => {
 		let userEmail = null;
 		try {
 			const userPoolId = process.env.COGNITO_USER_POOL_ID;
-			if (!userPoolId)
+			if (!userPoolId) {
 				throw new Error("COGNITO_USER_POOL_ID não definido no .env");
+			}
+
 			const userResp = await cognito.send(
 				new AdminGetUserCommand({
 					UserPoolId: userPoolId,
@@ -117,6 +120,7 @@ export const handler = async (event: SQSEvent) => {
 			console.error("Erro ao enviar email", error);
 		}
 	}
+
 	return {
 		statusCode: 200,
 		body: JSON.stringify({ message: "Processamento concluído" }),
